@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuestionario</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --azul:     #1a73e8;
+    --azul-osc: #1557b0;
+    --verde:    #137333;
+    --rojo:     #c5221f;
+    --gris:     #f8f9fa;
+    --borde:    #dadce0;
+    --texto:    #202124;
+    --sub:      #5f6368;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #f0f4ff;
+    color: var(--texto);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── Encabezado ── */
+  .quiz-header {
+    max-width: 700px;
+    margin: 0 auto 20px;
+    background: var(--azul);
+    border-radius: 12px 12px 0 0;
+    padding: 24px 28px;
+    color: white;
+  }
+  .quiz-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+  .quiz-header p { font-size: 13px; opacity: .85; }
+
+  /* ── Nombre ── */
+  .nombre-card {
+    max-width: 700px;
+    margin: 0 auto 16px;
+    background: white;
+    border-radius: 0 0 8px 8px;
+    border-top: 4px solid var(--azul);
+    padding: 22px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+  .nombre-card label { font-size: 14px; font-weight: 500; display: block; margin-bottom: 8px; }
+  .nombre-card input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--borde);
+    border-radius: 6px; font-family: inherit; font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .nombre-card input:focus { border-color: var(--azul); }
+
+  /* ── Barra de progreso ── */
+  .progreso-wrap {
+    max-width: 700px; margin: 0 auto 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--sub);
+  }
+  .progreso-bar { flex: 1; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .progreso-fill { height: 100%; background: var(--azul); border-radius: 2px; transition: width .4s ease; }
+
+  /* ── Tarjeta de pregunta ── */
+  .pregunta-card {
+    max-width: 700px; margin: 0 auto 14px;
+    background: white; border-radius: 8px;
+    border-left: 4px solid transparent;
+    padding: 22px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    transition: border-color .3s;
+  }
+  .pregunta-card.activa  { border-left-color: var(--azul); }
+  .pregunta-card.correcta { border-left-color: var(--verde); }
+  .pregunta-card.incorrecta { border-left-color: var(--rojo); }
+
+  .pregunta-num {
+    font-size: 11px; font-weight: 600; color: var(--azul);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px;
+  }
+  .pregunta-texto {
+    font-size: 15px; font-weight: 500; line-height: 1.5; margin-bottom: 14px;
+  }
+  .pregunta-img {
+    width: 100%; max-height: 280px; object-fit: contain;
+    border-radius: 6px; margin-bottom: 14px; border: 1px solid var(--borde);
+  }
+
+  /* Opciones radio/checkbox */
+  .opciones { display: flex; flex-direction: column; gap: 8px; }
+  .opcion {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border: 1px solid var(--borde);
+    border-radius: 6px; cursor: pointer; transition: background .15s, border-color .15s;
+    font-size: 14px; user-select: none;
+  }
+  .opcion:hover { background: #f0f4ff; border-color: var(--azul); }
+  .opcion input { accent-color: var(--azul); width: 16px; height: 16px; flex-shrink: 0; }
+  .opcion.sel { background: #e8f0fe; border-color: var(--azul); }
+
+  /* Texto corto */
+  .input-texto {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--borde);
+    border-radius: 6px; font-family: inherit; font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .input-texto:focus { border-color: var(--azul); }
+
+  /* Temporizador por pregunta */
+  .timer-pregunta {
+    margin-top: 12px; font-size: 11px; color: var(--sub);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .timer-pregunta span { font-weight: 600; color: var(--texto); }
+
+  /* Feedback tras envío */
+  .feedback {
+    margin-top: 10px; padding: 8px 12px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; display: none;
+  }
+  .feedback.ok  { background: #e6f4ea; color: var(--verde); }
+  .feedback.mal { background: #fce8e6; color: var(--rojo); }
+
+  /* ── Botón enviar ── */
+  .enviar-wrap { max-width: 700px; margin: 20px auto 0; }
+  .btn-enviar {
+    background: var(--azul); color: white; border: none;
+    padding: 13px 32px; border-radius: 6px; font-family: inherit;
+    font-size: 15px; font-weight: 500; cursor: pointer;
+    transition: background .2s; width: 100%;
+  }
+  .btn-enviar:hover { background: var(--azul-osc); }
+  .btn-enviar:disabled { background: #a8c7fa; cursor: not-allowed; }
+
+  /* ── Panel resultado final ── */
+  #resultado {
+    display: none; max-width: 700px; margin: 20px auto;
+    background: white; border-radius: 12px; padding: 36px 28px;
+    text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .resultado-emoji { font-size: 48px; margin-bottom: 12px; }
+  .resultado-cal   { font-family: 'DM Serif Display', serif; font-size: 52px; color: var(--azul); }
+  .resultado-sub   { font-size: 14px; color: var(--sub); margin-top: 4px; }
+  .resultado-stats { display: flex; justify-content: center; gap: 32px; margin: 20px 0; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 600; }
+  .stat-lbl { font-size: 11px; color: var(--sub); text-transform: uppercase; letter-spacing: .6px; }
+  .resultado-msg { font-size: 13px; color: var(--sub); margin-top: 16px; }
+
+  /* Temporizador global */
+  .timer-global {
+    position: fixed; top: 12px; right: 16px;
+    background: white; border: 1px solid var(--borde);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 13px; font-weight: 600; color: var(--texto);
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    display: flex; align-items: center; gap: 6px;
+    z-index: 100;
+  }
+  .timer-global.urgente { color: var(--rojo); border-color: var(--rojo); }
+</style>
+</head>
+<body>
+
+<!-- Temporizador global fijo -->
+<div class="timer-global" id="timerGlobal">⏱ <span id="timerGlobalVal">00:00</span></div>
+
+<!-- ══════════════════════════════════════════
+     ▼▼▼  EDITA AQUÍ TU CUESTIONARIO  ▼▼▼
+══════════════════════════════════════════ -->
+<script>
+// ─── CONFIGURACIÓN ──────────────────────────────────────────────
+const APPS_SCRIPT_URL = "PON_AQUI_LA_URL_DE_TU_APPS_SCRIPT";
+
+const CUESTIONARIO = {
+  titulo: "Evaluación: Sistemas Eléctricos",
+  descripcion: "Lee cada pregunta con atención. El tiempo de cada respuesta se registra automáticamente.",
+
+  preguntas: [
+    // ── OPCIÓN MÚLTIPLE (una sola respuesta) ──────────────────
+    {
+      id: "p1",
+      tipo: "radio",           // "radio" | "checkbox" | "verdadero_falso" | "texto"
+      texto: "¿Cuál es la unidad de medida de la resistencia eléctrica?",
+      imagen: null,            // URL de imagen o null
+      opciones: ["Voltio (V)", "Amperio (A)", "Ohm (Ω)", "Watt (W)"],
+      correcta: "Ohm (Ω)"     // string exacto de la opción correcta
+    },
+
+    // ── VERDADERO / FALSO ─────────────────────────────────────
+    {
+      id: "p2",
+      tipo: "verdadero_falso",
+      texto: "La corriente alterna (CA) mantiene siempre la misma dirección.",
+      imagen: null,
+      correcta: "Falso"
+    },
+
+    // ── CASILLAS (varias respuestas) ──────────────────────────
+    {
+      id: "p3",
+      tipo: "checkbox",
+      texto: "¿Cuáles de los siguientes son componentes pasivos en un circuito?",
+      imagen: null,
+      opciones: ["Resistencia", "Transistor", "Condensador", "Bobina", "Amplificador"],
+      correcta: ["Resistencia", "Condensador", "Bobina"],  // array con todas las correctas
+      // Puntuación parcial:
+      //   puntoPorCorrecta: puntos por cada opción correcta seleccionada (default: 1/n_correctas)
+      //   deduccionPorIncorrecta: puntos que se restan por cada incorrecta seleccionada (default: 0)
+      puntoPorCorrecta: null,       // null = automático (1 / total_correctas)
+      deduccionPorIncorrecta: 0.25  // 0 = sin deducción
+    },
+
+    // ── OPCIÓN MÚLTIPLE CON IMAGEN ────────────────────────────
+    {
+      id: "p4",
+      tipo: "radio",
+      texto: "¿Qué tipo de conexión se muestra en el diagrama?",
+      imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Ohm%27s_Law_with_Voltage_source_TeX.svg/320px-Ohm%27s_Law_with_Voltage_source_TeX.svg.png",
+      opciones: ["Serie", "Paralelo", "Mixta", "Delta"],
+      correcta: "Serie"
+    },
+
+    // ── TEXTO CORTO (sin calificación automática) ─────────────
+    {
+      id: "p5",
+      tipo: "texto",
+      texto: "Explica con tus propias palabras qué es la Ley de Ohm.",
+      imagen: null,
+      correcta: null   // null = se revisa manualmente
+    },
+  ]
+};
+// ────────────────────────────────────────────────────────────────
+</script>
+
+<!-- ══════════════════════════════════════════
+     FIN DE CONFIGURACIÓN — no editar abajo
+══════════════════════════════════════════ -->
+
+<div id="quizContainer"></div>
+<div id="resultado">
+  <div class="resultado-emoji" id="resEmoji">🎉</div>
+  <div class="resultado-cal" id="resCal">—</div>
+  <div class="resultado-sub" id="resSub">Calificación</div>
+  <div class="resultado-stats">
+    <div class="stat"><div class="stat-val" id="resAciertos">—</div><div class="stat-lbl">Aciertos</div></div>
+    <div class="stat"><div class="stat-val" id="resTotalP">—</div><div class="stat-lbl">Preguntas</div></div>
+    <div class="stat"><div class="stat-val" id="resTiempo">—</div><div class="stat-lbl">Tiempo Total</div></div>
+  </div>
+  <div class="resultado-msg" id="resMsg"></div>
+</div>
+
+<script>
+// ── Estado ─────────────────────────────────────────────────────
+const tiemposPorPregunta = {};  // { p1: segundos, ... }
+const tiemposInicio      = {};  // { p1: timestamp, ... }
+const respuestasAlumno   = {};
+let tiempoInicioExamen   = Date.now();
+let timerGlobalInterval  = null;
+let timerPreguntaIntervals = {};
+
+// ── Render ──────────────────────────────────────────────────────
+function render() {
+  const c = CUESTIONARIO;
+  const container = document.getElementById("quizContainer");
+  container.innerHTML = "";
+
+  // Header
+  const header = document.createElement("div");
+  header.className = "quiz-header";
+  header.innerHTML = `<h1>${c.titulo}</h1><p>${c.descripcion}</p>`;
+  container.appendChild(header);
+
+  // Nombre
+  const nombreCard = document.createElement("div");
+  nombreCard.className = "nombre-card";
+  nombreCard.innerHTML = `
+    <label for="nombreAlumno">* Nombre completo</label>
+    <input type="text" id="nombreAlumno" placeholder="Escribe tu nombre y apellidos" required>
+  `;
+  container.appendChild(nombreCard);
+
+  // Progreso
+  const progWrap = document.createElement("div");
+  progWrap.className = "progreso-wrap";
+  progWrap.innerHTML = `
+    <div class="progreso-bar"><div class="progreso-fill" id="progresoFill" style="width:0%"></div></div>
+    <span id="progresoTexto">0 / ${c.preguntas.length}</span>
+  `;
+  container.appendChild(progWrap);
+
+  // Preguntas
+  c.preguntas.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "pregunta-card";
+    card.id = `card-${p.id}`;
+
+    let opcionesHTML = "";
+
+    if (p.tipo === "verdadero_falso") {
+      opcionesHTML = `<div class="opciones">
+        ${["Verdadero","Falso"].map(op => `
+          <label class="opcion" id="opcion-${p.id}-${op}">
+            <input type="radio" name="${p.id}" value="${op}" onchange="seleccionar('${p.id}','${op}','radio')">
+            ${op}
+          </label>`).join("")}
+      </div>`;
+    } else if (p.tipo === "radio") {
+      opcionesHTML = `<div class="opciones">
+        ${p.opciones.map(op => `
+          <label class="opcion" id="opcion-${p.id}-${op.replace(/[^a-zA-Z0-9]/g,'_')}">
+            <input type="radio" name="${p.id}" value="${op}" onchange="seleccionar('${p.id}','${op}','radio')">
+            ${op}
+          </label>`).join("")}
+      </div>`;
+    } else if (p.tipo === "checkbox") {
+      opcionesHTML = `<div class="opciones">
+        ${p.opciones.map(op => `
+          <label class="opcion" id="opcion-${p.id}-${op.replace(/[^a-zA-Z0-9]/g,'_')}">
+            <input type="checkbox" name="${p.id}" value="${op}" onchange="seleccionarCheckbox('${p.id}')">
+            ${op}
+          </label>`).join("")}
+      </div>`;
+    } else if (p.tipo === "texto") {
+      opcionesHTML = `<input class="input-texto" id="texto-${p.id}"
+        placeholder="Escribe tu respuesta aquí..."
+        oninput="seleccionar('${p.id}', this.value, 'texto')">`;
+    }
+
+    card.innerHTML = `
+      <div class="pregunta-num">Pregunta ${i+1} de ${c.preguntas.length}</div>
+      <div class="pregunta-texto">${p.texto}</div>
+      ${p.imagen ? `<img class="pregunta-img" src="${p.imagen}" alt="Imagen pregunta ${i+1}">` : ""}
+      ${opcionesHTML}
+      <div class="timer-pregunta">⏱ Tiempo en esta pregunta: <span id="timer-${p.id}">0s</span></div>
+      <div class="feedback" id="feedback-${p.id}"></div>
+    `;
+
+    card.addEventListener("click", () => activarPregunta(p.id), { once: false });
+    container.appendChild(card);
+
+    // Iniciar timer al entrar por primera vez (IntersectionObserver)
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        if (!tiemposInicio[p.id]) iniciarTimerPregunta(p.id);
+        obs.disconnect();
+      }
+    }, { threshold: 0.5 });
+    obs.observe(card);
+  });
+
+  // Botón enviar
+  const enviarWrap = document.createElement("div");
+  enviarWrap.className = "enviar-wrap";
+  enviarWrap.innerHTML = `<button class="btn-enviar" id="btnEnviar" onclick="enviar()">Enviar cuestionario</button>`;
+  container.appendChild(enviarWrap);
+
+  // Iniciar timer global
+  iniciarTimerGlobal();
+
+  // Activar primera pregunta
+  setTimeout(() => activarPregunta(c.preguntas[0].id), 300);
+}
+
+// ── Timers ──────────────────────────────────────────────────────
+function iniciarTimerGlobal() {
+  tiempoInicioExamen = Date.now();
+  timerGlobalInterval = setInterval(() => {
+    const seg = Math.floor((Date.now() - tiempoInicioExamen) / 1000);
+    const m = Math.floor(seg / 60).toString().padStart(2,'0');
+    const s = (seg % 60).toString().padStart(2,'0');
+    document.getElementById("timerGlobalVal").textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function iniciarTimerPregunta(id) {
+  if (tiemposInicio[id]) return;
+  tiemposInicio[id] = Date.now();
+  timerPreguntaIntervals[id] = setInterval(() => {
+    const seg = Math.floor((Date.now() - tiemposInicio[id]) / 1000);
+    const el = document.getElementById(`timer-${id}`);
+    if (el) el.textContent = formatTiempo(seg);
+  }, 1000);
+}
+
+function detenerTimerPregunta(id) {
+  if (timerPreguntaIntervals[id]) {
+    clearInterval(timerPreguntaIntervals[id]);
+    delete timerPreguntaIntervals[id];
+  }
+  if (tiemposInicio[id]) {
+    tiemposPorPregunta[id] = Math.floor((Date.now() - tiemposInicio[id]) / 1000);
+  }
+}
+
+function formatTiempo(seg) {
+  const m = Math.floor(seg / 60);
+  const s = seg % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+// ── Interacción ─────────────────────────────────────────────────
+function activarPregunta(id) {
+  document.querySelectorAll(".pregunta-card").forEach(c => c.classList.remove("activa"));
+  const card = document.getElementById(`card-${id}`);
+  if (card) {
+    card.classList.add("activa");
+    if (!tiemposInicio[id]) iniciarTimerPregunta(id);
+  }
+}
+
+function seleccionar(id, valor, tipo) {
+  respuestasAlumno[id] = valor;
+  actualizarProgreso();
+  if (!tiemposInicio[id]) iniciarTimerPregunta(id);
+  // Resaltar opción seleccionada
+  if (tipo === "radio") {
+    document.querySelectorAll(`[name="${id}"]`).forEach(inp => {
+      inp.closest(".opcion")?.classList.toggle("sel", inp.value === valor);
+    });
+  }
+}
+
+function seleccionarCheckbox(id) {
+  const checks = document.querySelectorAll(`[name="${id}"]:checked`);
+  respuestasAlumno[id] = Array.from(checks).map(c => c.value);
+  actualizarProgreso();
+  if (!tiemposInicio[id]) iniciarTimerPregunta(id);
+  document.querySelectorAll(`[name="${id}"]`).forEach(inp => {
+    inp.closest(".opcion")?.classList.toggle("sel", inp.checked);
+  });
+}
+
+function actualizarProgreso() {
+  const respondidas = CUESTIONARIO.preguntas.filter(p => {
+    const r = respuestasAlumno[p.id];
+    return r !== undefined && r !== "" && !(Array.isArray(r) && r.length === 0);
+  }).length;
+  const total = CUESTIONARIO.preguntas.length;
+  const pct = Math.round((respondidas / total) * 100);
+  document.getElementById("progresoFill").style.width = pct + "%";
+  document.getElementById("progresoTexto").textContent = `${respondidas} / ${total}`;
+}
+
+// ── Envío ────────────────────────────────────────────────────────
+async function enviar() {
+  const nombre = document.getElementById("nombreAlumno").value.trim();
+  if (!nombre) { alert("Por favor escribe tu nombre completo."); return; }
+
+  // Detener todos los timers activos
+  CUESTIONARIO.preguntas.forEach(p => detenerTimerPregunta(p.id));
+  clearInterval(timerGlobalInterval);
+
+  const tiempoTotal = Math.floor((Date.now() - tiempoInicioExamen) / 1000);
+
+  const btn = document.getElementById("btnEnviar");
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  // Construir payload
+  const tipos     = {};
+  const correctas = {};
+  CUESTIONARIO.preguntas.forEach(p => {
+    tipos[p.id]     = p.tipo === "verdadero_falso" ? "radio" : p.tipo;
+    correctas[p.id] = p.correcta;
+  });
+
+  const payload = {
+    nombre,
+    tiempoTotal,
+    tiempos:    tiemposPorPregunta,
+    respuestas: respuestasAlumno,
+    correctas,
+    tipos,
+    preguntas: CUESTIONARIO.preguntas.map(p => ({ id: p.id, texto: p.texto }))
+  };
+
+  // Mostrar feedback inmediato antes de enviar
+  let aciertos = 0;
+  CUESTIONARIO.preguntas.forEach(p => {
+    const resp = respuestasAlumno[p.id];
+    const corr = p.correcta;
+    const card = document.getElementById(`card-${p.id}`);
+    const fb   = document.getElementById(`feedback-${p.id}`);
+
+    if (p.tipo === "texto") {
+      fb.textContent = "✏️ Esta respuesta será revisada manualmente.";
+      fb.className = "feedback ok"; fb.style.display = "block";
+      return;
+    }
+
+    if (p.tipo === "checkbox") {
+      // ── Puntuación parcial ──────────────────────────────────
+      const corrArr  = Array.isArray(corr) ? corr : [];
+      const respArr  = Array.isArray(resp) ? resp : [];
+      const nCorr    = corrArr.length;
+      const puntoPorCorrecta      = p.puntoPorCorrecta      ?? (1 / nCorr);
+      const deduccionPorIncorrecta = p.deduccionPorIncorrecta ?? 0;
+
+      let puntos = 0;
+      respArr.forEach(r => {
+        if (corrArr.includes(r)) puntos += puntoPorCorrecta;
+        else                     puntos -= deduccionPorIncorrecta;
+      });
+      puntos = Math.max(0, Math.min(1, puntos)); // clamp [0, 1]
+      aciertos += puntos;
+
+      const corrStr = corrArr.join(", ");
+      if (puntos === 1) {
+        card.classList.add("correcta");
+        fb.textContent = "✅ Perfecto — todas las opciones correctas";
+        fb.className = "feedback ok";
+      } else if (puntos > 0) {
+        card.classList.add("activa"); // azul = parcial
+        fb.textContent = `🟡 Parcial (${Math.round(puntos*100)}%) — Correctas: ${corrStr}`;
+        fb.className = "feedback ok";
+        fb.style.background = "#fff8e1"; fb.style.color = "#b06000";
+      } else {
+        card.classList.add("incorrecta");
+        fb.textContent = `❌ Incorrecto — Correctas: ${corrStr}`;
+        fb.className = "feedback mal";
+      }
+    } else {
+      const esCorrecta = String(resp||"").trim().toLowerCase() === String(corr||"").trim().toLowerCase();
+      if (esCorrecta) {
+        aciertos++;
+        card.classList.add("correcta");
+        fb.textContent = "✅ Correcto";
+        fb.className = "feedback ok";
+      } else {
+        card.classList.add("incorrecta");
+        const corrStr = Array.isArray(corr) ? corr.join(", ") : corr;
+        fb.textContent = `❌ Incorrecto — Respuesta correcta: ${corrStr}`;
+        fb.className = "feedback mal";
+      }
+    }
+    fb.style.display = "block";
+  });
+
+  // Enviar a Apps Script
+  try {
+    if (APPS_SCRIPT_URL !== "PON_AQUI_LA_URL_DE_TU_APPS_SCRIPT") {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        mode: "no-cors"
+      });
+    }
+  } catch(err) {
+    console.warn("No se pudo enviar a Sheets:", err);
+  }
+
+  // Mostrar resultado
+  const totalCal = CUESTIONARIO.preguntas.filter(p => p.tipo !== "texto").length;
+  const cal = totalCal > 0 ? Math.round((aciertos / totalCal) * 100) : 0;
+  // aciertos puede ser decimal por puntuación parcial en checkboxes
+  const aciertosDisplay = Number.isInteger(aciertos) ? aciertos : aciertos.toFixed(1);
+
+  document.getElementById("resCal").textContent    = cal + "%";
+  document.getElementById("resAciertos").textContent = aciertosDisplay;
+  document.getElementById("resTotalP").textContent   = totalCal;
+  document.getElementById("resTiempo").textContent   = formatTiempo(tiempoTotal);
+  document.getElementById("resEmoji").textContent    = cal >= 70 ? "🎉" : cal >= 50 ? "😐" : "📚";
+  document.getElementById("resMsg").textContent      = cal >= 70
+    ? "¡Excelente trabajo! Tus respuestas han sido registradas."
+    : "Tus respuestas han sido registradas. Sigue practicando.";
+
+  document.getElementById("resultado").style.display = "block";
+  document.getElementById("resultado").scrollIntoView({ behavior: "smooth" });
+  btn.textContent = "✅ Enviado";
+}
+
+// ── Iniciar ─────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
